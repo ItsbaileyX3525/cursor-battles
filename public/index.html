@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lobby</title>
+  <link rel="stylesheet" href="static/css/styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+
+</head>
+<body>
+  <div class="container">
+    <div class="customization-panel">
+      <div class="cursor-preview">
+        <img src="static/cursors/cursor.svg" alt="Cursor" id="cursorPreview" width="80" height="80">
+      </div>
+      
+      <div class="color-section">
+        <h3>Inside</h3>
+        <div class="color-sliders">
+          <div class="slider-group">
+            <label>Red</label>
+            <input type="range" min="0" max="255" value="64" class="slider inside-red">
+          </div>
+          <div class="slider-group">
+            <label>Green</label>
+            <input type="range" min="0" max="255" value="160" class="slider inside-green">
+          </div>
+          <div class="slider-group">
+            <label>Blue</label>
+            <input type="range" min="0" max="255" value="255" class="slider inside-blue">
+          </div>
+        </div>
+      </div>
+
+      <div class="color-section">
+        <h3>Outline</h3>
+        <div class="color-sliders">
+          <div class="slider-group">
+            <label>Red</label>
+            <input type="range" min="0" max="255" value="0" class="slider outline-red">
+          </div>
+          <div class="slider-group">
+            <label>Green</label>
+            <input type="range" min="0" max="255" value="0" class="slider outline-green">
+          </div>
+          <div class="slider-group">
+            <label>Blue</label>
+            <input type="range" min="0" max="255" value="0" class="slider outline-blue">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-panel">
+      <div class="profile-card">
+        <div class="profile-header">
+          <div class="profile-name">Name: Guest</div>
+          <div class="profile-id">ID</div>
+        </div>
+        <div class="profile-stats">
+          <div class="cursor-icon">
+            <img src="static/cursor/cursor.svg" alt="Cursor" width="40" height="40">
+          </div>
+          <div class="stats-info">
+            <div id="WinsInfo">Wins: 1</div>
+            <div id="LvlInfo">LVL: 1</div>
+            <div class="level-progress">
+              <div class="progress-fill" style="width: 50%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="coins-section">
+          <div>Coins:</div>
+        </div>
+      </div>
+
+      <div class="game-actions">
+        <div class="play-button">
+          Play
+        </div>
+        <div class="create-game-button">
+          Create Game
+        </div>
+      </div>
+
+      <div class="join-section">
+        <div class="join-label">Join:</div>
+        <input type="text" class="join-code" maxlength="5" placeholder="00000" pattern="[0-9]*">      
+    </div>
+        <div class="join-button">
+          Join Game
+        </div>
+    </div>
+  </div>
+  <script type="module" src="static/js/lobby/load.js"></script>
+  <script type="module" src="static/js/lobby/cursor.js"></script>
+  <script type="module" src="static/js/lobby/connect.js"></script>
+</body>
+</html>

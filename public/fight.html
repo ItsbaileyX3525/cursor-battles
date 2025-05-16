@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIGHT!</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+<style>
+    html, body {
+        height: 100%;
+        width: 100%;
+        cursor: none !important;
+    }
+    #healthBar {
+        width: 30%;
+        background-color: grey;
+        position: absolute;
+        top: 40px;
+        left: 10px;
+        border-radius: 5px;
+        overflow: hidden;
+        }
+    #healthBar2 {
+        width: 30%;
+        background-color: grey;
+        position: absolute;
+        top: 40px;
+        right: 10px;
+        border-radius: 5px;
+        overflow: hidden;
+        }
+
+    #bar {
+        width: 100%;
+        height: 30px;
+        background-color: rgb(0, 199, 0);
+    }
+    #bar2 {
+        width: 100%;
+        height: 30px;
+        background-color: rgb(0, 199, 0);
+    }
+    .square {
+        width: 80px;
+        height: 80px;
+        background-color: red;
+        position: absolute;
+        /*visibility: hidden;*/
+    }
+</style>
+</head>
+<body style="user-select: none; cursor: none;">
+    <p>Your health:</p>
+    <div id="healthBar">
+        <div id="bar"></div>
+    </div>
+    <p style="position: absolute;right: 22%;top: 0px;">Guest's health:</p>
+    <div id="healthBar2">
+        <div id="bar2"></div>
+    </div>
+    <img id="cursor1" style="position:absolute; left:0; top:0; pointer-events:none; width:64px; height:64px; z-index:9999; display:none;" alt="Cat Cursor">
+    <div id="nametag1" style="position:absolute; left:0; top:0; pointer-events:none; z-index:10000; display:none; background:rgba(0,0,0,0.7); color:#fff; padding:2px 8px; border-radius:8px; font-size:14px; text-align:center; transform:translateY(-110%);"></div>
+    <img id="cursor2" style="display:hidden; position:absolute; left:0; top:0; pointer-events:none; width:64px; height:64px; z-index:9999; display:none;" alt="Cat Cursor">
+    <div id="nametag2" style="position:absolute; left:0; top:0; pointer-events:none; z-index:10000; display:none; background:rgba(0,0,0,0.7); color:#fff; padding:2px 8px; border-radius:8px; font-size:14px; text-align:center; transform:translateY(-110%);"></div>
+    <script src="static/js/fight/cursor.js"></script>
+    <script src="static/js/fight/connect.js"></script>
+    <script src="static/js/fight/main.js"></script>
+</body>
+</html>
