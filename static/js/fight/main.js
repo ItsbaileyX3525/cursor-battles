@@ -8,6 +8,9 @@ const nametag2 = document.getElementById('nametag2');
 let firstPos = [];
 let secondPos = [];
 
+let firstPosQueue = [];
+let secondPosQueue = [];
+
 let canAttack = true;
 
 let canUpdate = true;
@@ -56,31 +59,65 @@ function isColliding(el1, el2) {
     );
 }
 
-if (firstPlayer == "False") { //Recieving stuff from the host
+function processSocketUpdates() {
+    if (firstPlayer == "False") { // Receiving stuff from the host
+        if (firstPosQueue.length > 0) {
+            console.log("Player 1 update")
+            const data = firstPosQueue.shift();
+            firstPos = data;
+            cursor2.style.display = 'block';
+            cursor2Target.x = firstPos[0];
+            cursor2Target.y = firstPos[1];
+            if (cursor2Current.x === 0 && cursor2Current.y === 0) {
+                cursor2Current.x = firstPos[0];
+                cursor2Current.y = firstPos[1];
+            }
+            updatePlayer2CursorColors(firstPos[3]);
+        }
+    } else { // Receiving stuff from the client
+        if (secondPosQueue.length > 0) {
+            console.log("Player 2 update")
+            const data = secondPosQueue.shift();
+            secondPos = data;
+            cursor2.style.display = 'block';
+            cursor2Target.x = secondPos[0];
+            cursor2Target.y = secondPos[1];
+            if (cursor2Current.x === 0 && cursor2Current.y === 0) {
+                cursor2Current.x = secondPos[0];
+                cursor2Current.y = secondPos[1];
+            }
+            updatePlayer2CursorColors(secondPos[3]);
+        }
+    }
+
+    requestAnimationFrame(processSocketUpdates); // Continue processing updates
+}
+
+// Queue incoming socket data
+if (firstPlayer == "False") {
     socket.on("FirstPos", function(data) {
-        firstPos = data;
-        cursor2.style.display = 'block';
-        cursor2Target.x = firstPos[0];
-        cursor2Target.y = firstPos[1];
-        if (cursor2Current.x === 0 && cursor2Current.y === 0) {
-            cursor2Current.x = firstPos[0];
-            cursor2Current.y = firstPos[1];
+        const MAX_QUEUE_LENGTH = 60;
+        if (firstPosQueue.length < MAX_QUEUE_LENGTH) {
+            firstPosQueue.push(data);
+        }else{
+            firstPosQueue = [] //Reset if too long
         }
-        updatePlayer2CursorColors(firstPos[3]);
+        
     });
-} else { //Recieving stuff from the client
+} else {
     socket.on("SecondPos", function(data) {
-        secondPos = data;
-        cursor2.style.display = 'block';
-        cursor2Target.x = secondPos[0];
-        cursor2Target.y = secondPos[1];
-        if (cursor2Current.x === 0 && cursor2Current.y === 0) {
-            cursor2Current.x = secondPos[0];
-            cursor2Current.y = secondPos[1];
+        const MAX_QUEUE_LENGTH = 60;
+        if (secondPosQueue.length < MAX_QUEUE_LENGTH) {
+            secondPosQueue.push(data);
+        }else{
+            secondPosQueue = [] //Reset if too long
         }
-        updatePlayer2CursorColors(secondPos[3]);
+        
     });
 }
+
+// Start processing updates
+requestAnimationFrame(processSocketUpdates);
 
 socket.on("receiveAttack", function(data) {
     //Nah we will only send the event to the player who didnt call it 
@@ -138,11 +175,12 @@ function update_game_state(data) {
 }
 
 function allowGameStateUpdate() {
-    canUpdate = true;
     setInterval(() => {
-        allowGameStateUpdate();
-    }, 2000); //2 seconds
+        canUpdate = true;
+    }, 2000);
 }
+allowGameStateUpdate();
+
 
 allowGameStateUpdate();
 
@@ -182,25 +220,14 @@ document.addEventListener('mousedown', (e) => {
     if (e.button === 0 && canAttack) { // LMB
         //Perhaps show some attack animation?
         canAttack = false;
-        //const body = document.querySelector('body');
-        //const square = document.createElement('div');
-        //square.classList.add("square");
 
         const squareSize = 80;
         const x = e.clientX - squareSize / 2;
         const y = e.clientY - squareSize / 2;
 
-        //square.style.left = x + 'px';
-        //square.style.top = y + 'px';
-
-        //body.appendChild(square);
-
         pos = [x, y, squareSize];
         sendAttack(pos);
 
-        //setTimeout(() => {
-            //body.removeChild(square);
-        //}, 1000); // Remove the square after 1 second
         setTimeout(() => {
             canAttack = true;
         }, 750);
