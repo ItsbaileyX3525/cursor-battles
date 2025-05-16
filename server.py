@@ -154,6 +154,14 @@ def sendPlayerAttack(data):
     #Now deadass we just send the attack to the other player, simple...
     socketio.emit("receiveAttack", attackData, room=gameRoom)
 
+@socketio.on("UpdatePlayerHealth")
+def updatePlayerHealth(data):
+    gameRoom = data[0]
+    playerDamaged = data[1]
+    health = data[2]
+
+    socketio.emit("updateHealth", [playerDamaged, health], room=gameRoom)
+
 @socketio.on("fightEnd")
 def removeFight(data):
     gameRoom = data["fightCode"]

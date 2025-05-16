@@ -1,9 +1,19 @@
 //Everything the player sees during gameplay
 
+
+// TODO: When player dies update score instead of disonnecting from server
 const cursor = document.getElementById('cursor1');
 const cursor2 = document.getElementById('cursor2');
 const nametag1 = document.getElementById('nametag1');
 const nametag2 = document.getElementById('nametag2');
+const myHeart1 = document.getElementById('heartImage');
+const myHeart2 = document.getElementById('heartImage2');
+const myHeart3 = document.getElementById('heartImage3');
+const enemyHeart1 = document.getElementById('altHeartImage');
+const enemyHeart2 = document.getElementById('altHeartImage2');
+const enemyHeart3 = document.getElementById('altHeartImage3');
+let elementOrder = [myHeart1, myHeart2, myHeart3]
+let elementOrderEnemy = [enemyHeart1, enemyHeart2, enemyHeart3]
 
 let firstPos = [];
 let secondPos = [];
@@ -18,6 +28,7 @@ let canUpdate = true;
 let firstPlayer = localStorage.getItem("player"); //True if is player 1
 nametag1.textContent = localStorage.getItem("username") || "Guest";
 
+let myHP = 3;
 let cursor2Current = { x: 0, y: 0 };
 let cursor2Target = { x: 0, y: 0 };
 let lerpSpeed = 0.15; // Adjust for smoothness
@@ -62,7 +73,6 @@ function isColliding(el1, el2) {
 function processSocketUpdates() {
     if (firstPlayer == "False") { // Receiving stuff from the host
         if (firstPosQueue.length > 0) {
-            console.log("Player 1 update")
             const data = firstPosQueue.shift();
             firstPos = data;
             cursor2.style.display = 'block';
@@ -76,7 +86,6 @@ function processSocketUpdates() {
         }
     } else { // Receiving stuff from the client
         if (secondPosQueue.length > 0) {
-            console.log("Player 2 update")
             const data = secondPosQueue.shift();
             secondPos = data;
             cursor2.style.display = 'block';
@@ -119,9 +128,44 @@ if (firstPlayer == "False") {
 // Start processing updates
 requestAnimationFrame(processSocketUpdates);
 
+socket.on("updateHealth", function(data){
+    //Called when the player gets hurt
+    const playerDamanged = data[0];
+    const newEnemyHP = data[1];
+
+    if(firstPlayer == "True" && playerDamanged == "2"){ 
+        //You are player 1 and player 2 got hurt, so update player 2s heart
+        elementOrderEnemy[newEnemyHP].style.backgroundImage = "url('/static/assets/background.png')";
+        
+        if(newEnemyHP == 0){
+            //Player 2 lost all their hearts
+            cursor2.style.display = 'none';
+            nametag2.style.display = 'none';
+            //Display some victory screen
+            //Perhaps play some victory sound
+
+            //Disconnect from server
+            socket.disconnect();
+        }
+    }else if(firstPlayer == "False" && playerDamanged == "1"){ 
+        //You are player 2 and player 1 got hurt, so update player 1s heart
+        elementOrderEnemy[newEnemyHP].style.backgroundImage = "url('/static/assets/background.png')";
+        if(newEnemyHP == 0){
+            //Player 2 lost all their hearts
+            cursor2.style.display = 'none';
+            nametag2.style.display = 'none';
+            //Display some victory screen
+            //Perhaps play some victory sound
+            
+
+            //Disconnect from server
+            socket.disconnect();
+        }    
+    }    
+})
+
 socket.on("receiveAttack", function(data) {
     //Nah we will only send the event to the player who didnt call it 
-    console.log("Recieved attack event: ", data);
     const isPlayer1 = data[2];
     const attackPos = [data[0], data[1]];
 
@@ -138,21 +182,50 @@ socket.on("receiveAttack", function(data) {
     }, 1000); // Remove the square after 1 second
 
     if(isPlayer1 == "True" && firstPlayer == "False") {
-        //Player 2 sent attack, player 1 gets hurt
+        //You are player 1 and player 2 sent the attack
         if (isColliding(cursor, square)) {
-            console.log("Player 1 got hit");
-            //Do code related to getting hurt ig
+            myHP--;
+            elementOrder[myHP].style.backgroundImage = "url('/static/assets/background.png')";
+            socket.emit("UpdatePlayerHealth", [roomCode, "2", myHP]);
+            if(myHP == 0) {
+                //Player 1 lost all their hearts
+                cursor.style.display = 'none';
+                nametag1.style.display = 'none';
+                //Display some loss screen
+                //Perhaps play a loss sound
+
+                //Disconnect from server
+                socket.disconnect();
+            }
         }
     }
     else if(isPlayer1 == "False" && firstPlayer == "True") {
-        //Player 1 sent attack, player 2 gets hurt
+        //If you are player 2 and player 1 sent the attack
         if (isColliding(cursor, square)) {
-            console.log("Player 2 got hit");
-            //Do code related to getting hurt ig
+            myHP--;
+            elementOrder[myHP].style.backgroundImage = "url('/static/assets/background.png')";
+            socket.emit("UpdatePlayerHealth", [roomCode, "1", myHP]);
+            if(myHP == 0) {
+                //Player 1 lost all their hearts
+                cursor.style.display = 'none';
+                nametag1.style.display = 'none';
+                //Display some loss screen
+                //Perhaps play a loss sound
+
+                //Disconnect from server
+                socket.disconnect();
+            }
         }
     }
 
 })
+
+socket.on("disconnect", function(data) {
+    if (data == "io client disconnect"){
+        //idk what I was gonna put here tbh
+        pass
+    }
+});
 
 function sendFirstPos(pos) {
     socket.emit("updateFirstPosition", pos);
@@ -164,31 +237,21 @@ function sendSecondPos(pos) {
 
 function sendAttack(attackPos) {
     socket.emit("attackPlayer", { "fightCode": roomCode, "attackData": [attackPos[0], attackPos[1]], "isPlayer1": localStorage.getItem("player") });
-    console.log("Attack sent");
 }
 
 function update_game_state(data) {
     if (!canUpdate) return; //Prevent sending too many updates
     canUpdate = false;
-    console.log("Updatd game state with:", data);
     socket.emit("updateGameState", { "fightCode": roomCode, "username": username, "isPlayer1": localStorage.getItem("player"), "GameData": data });
 }
 
-function allowGameStateUpdate() {
-    setInterval(() => {
-        canUpdate = true;
-    }, 2000);
-}
-allowGameStateUpdate();
-
-
-allowGameStateUpdate();
+setInterval(() => {
+    canUpdate = true;
+}, 2000);
 
 function handle_game_state(data) {
-    console.log("Received game state:", data);
     const isPlayer1 = localStorage.getItem("player");
     if (isPlayer1 == "True") {//They are player 1 and testing if player 2 joined
-        console.log("Server thinks you are player 1");
         if (data.player2 != "None") {
             nametag2.textContent = data.player2.name;
             cursor2.style.display = 'block';
