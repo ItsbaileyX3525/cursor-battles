@@ -1,7 +1,7 @@
 let isDisconnected = false
 
 //Server stuff (on server)
-const socket = io.connect('http://' + window.location.hostname + ":80");
+const socket = io.connect('http://' + "localhost" + ":80");
 const username = localStorage.getItem("username") || "Guest";
 const roomCode = 1 //Lobby
 
