@@ -1,7 +1,7 @@
 //Everything the player sees during gameplay
 
 
-// TODO: When player dies update score instead of disonnecting from server
+// TODO: Update the users wins and losses, also update exp + coins/money
 const cursor = document.getElementById('cursor1');
 const cursor2 = document.getElementById('cursor2');
 const nametag1 = document.getElementById('nametag1');
@@ -12,6 +12,9 @@ const myHeart3 = document.getElementById('heartImage3');
 const enemyHeart1 = document.getElementById('altHeartImage');
 const enemyHeart2 = document.getElementById('altHeartImage2');
 const enemyHeart3 = document.getElementById('altHeartImage3');
+const scoreboard = document.getElementById('score');
+const winlossscreen = document.getElementById('winLossScreen');
+const winLossMessage = document.getElementById('winLossMessage');
 let elementOrder = [myHeart1, myHeart2, myHeart3]
 let elementOrderEnemy = [enemyHeart1, enemyHeart2, enemyHeart3]
 
@@ -28,6 +31,8 @@ let canUpdate = true;
 let firstPlayer = localStorage.getItem("player"); //True if is player 1
 nametag1.textContent = localStorage.getItem("username") || "Guest";
 
+let MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility = false;
+let currentScore = [0,0];
 let myHP = 3;
 let cursor2Current = { x: 0, y: 0 };
 let cursor2Target = { x: 0, y: 0 };
@@ -137,30 +142,79 @@ socket.on("updateHealth", function(data){
         //You are player 1 and player 2 got hurt, so update player 2s heart
         elementOrderEnemy[newEnemyHP].style.backgroundImage = "url('/static/assets/background.png')";
         
-        if(newEnemyHP == 0){
-            //Player 2 lost all their hearts
-            cursor2.style.display = 'none';
-            nametag2.style.display = 'none';
-            //Display some victory screen
-            //Perhaps play some victory sound
+        //Player hit so give them blink effect to indicate invincibility
+        cursor2.classList.add('blink');
+        setTimeout(() => {
+            cursor2.classList.remove('blink');
+        }, 3000); // Remove the blink effect
 
-            //Disconnect from server
-            socket.disconnect();
+        if(newEnemyHP == 0){
+            //Update scoreboard, player 2 lost all hearts so update my score
+            currentScore[0] += 1;
+            scoreboard.textContent = currentScore[0] + " - " + currentScore[1];
+
+            if (currentScore[0] == 3){//you, player 1, won
+                winlossscreen.style.display = 'flex';
+                winLossMessage.textContent = "You won!";
+                cursor.style.display = 'none';
+                nametag1.style.display = 'none';
+                cursor2.style.display = 'none';
+                nametag2.style.display = 'none';
+                //Display some victory screen
+                //Perhaps play some victory sound
+                
+
+                //Disconnect from server
+                socket.disconnect();
+            }else{
+                //reset health and hp variables
+                myHP = 3;
+                for (let i = 0; i < elementOrderEnemy.length; i++) {
+                    elementOrderEnemy[i].style.backgroundImage = "url('/static/assets/heart.png')";
+                }
+                for (let i = 0; i < elementOrder.length; i++) {
+                    elementOrder[i].style.backgroundImage = "url('/static/assets/heart.png')";
+                }
+            }
         }
     }else if(firstPlayer == "False" && playerDamanged == "1"){ 
         //You are player 2 and player 1 got hurt, so update player 1s heart
         elementOrderEnemy[newEnemyHP].style.backgroundImage = "url('/static/assets/background.png')";
-        if(newEnemyHP == 0){
-            //Player 2 lost all their hearts
-            cursor2.style.display = 'none';
-            nametag2.style.display = 'none';
-            //Display some victory screen
-            //Perhaps play some victory sound
-            
+        
+        //Player hit so give them blink effect to indicate invincibility
+        cursor2.classList.add('blink');
+        setTimeout(() => {
+            cursor2.classList.remove('blink');
+        }, 3000); // Remove the blink effect
 
-            //Disconnect from server
-            socket.disconnect();
-        }    
+        if(newEnemyHP == 0){
+            currentScore[0] += 1;
+            scoreboard.textContent = currentScore[0] + " - " + currentScore[1];
+
+            if (currentScore[0] == 3){//you, player 2, won
+                winlossscreen.style.display = 'flex';
+                winLossMessage.textContent = "You won!";
+                cursor.style.display = 'none';
+                nametag1.style.display = 'none';
+                cursor2.style.display = 'none';
+                nametag2.style.display = 'none';
+                //Display some victory screen
+                //Perhaps play some victory sound
+                
+
+                //Disconnect from server
+                socket.disconnect();
+            }else{
+                //reset health and hp variables
+                myHP = 3;
+                for (let i = 0; i < elementOrderEnemy.length; i++) {
+                    elementOrderEnemy[i].style.backgroundImage = "url('/static/assets/heart.png')";
+                }
+                for (let i = 0; i < elementOrder.length; i++) {
+                    elementOrder[i].style.backgroundImage = "url('/static/assets/heart.png')";
+                }
+            }
+        }
     }    
 })
 
@@ -183,37 +237,86 @@ socket.on("receiveAttack", function(data) {
 
     if(isPlayer1 == "True" && firstPlayer == "False") {
         //You are player 1 and player 2 sent the attack
-        if (isColliding(cursor, square)) {
+        if (isColliding(cursor, square) && !MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility) {
             myHP--;
             elementOrder[myHP].style.backgroundImage = "url('/static/assets/background.png')";
             socket.emit("UpdatePlayerHealth", [roomCode, "2", myHP]);
-            if(myHP == 0) {
-                //Player 1 lost all their hearts
-                cursor.style.display = 'none';
-                nametag1.style.display = 'none';
-                //Display some loss screen
-                //Perhaps play a loss sound
+            MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility = true;
+            cursor.classList.add('blink');
+            setTimeout(() => {
+                cursor.classList.remove('blink');
+                MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility = false;
+            }, 3000); // Remove the blink effect
 
-                //Disconnect from server
-                socket.disconnect();
+            if(myHP == 0) {
+                currentScore[1] += 1;
+                scoreboard.textContent = currentScore[0] + " - " + currentScore[1];
+
+                if (currentScore[1] == 3){
+                    winlossscreen.style.display = 'flex';
+                    winLossMessage.textContent = "You lost!";
+                    cursor.style.display = 'none';
+                    nametag1.style.display = 'none';
+                    cursor2.style.display = 'none';
+                    nametag2.style.display = 'none';
+                    //Display some loss screen
+                    //Perhaps play a loss sound
+
+                    //Disconnect from server
+                    socket.disconnect();
+                }else{
+                    //reset health and hp variables
+                    myHP = 3;
+                    for (let i = 0; i < elementOrderEnemy.length; i++) {
+                        elementOrderEnemy[i].style.backgroundImage = "url('/static/assets/heart.png')";
+                    }
+                    for (let i = 0; i < elementOrder.length; i++) {
+                        elementOrder[i].style.backgroundImage = "url('/static/assets/heart.png')";
+                    }
+            }
             }
         }
     }
     else if(isPlayer1 == "False" && firstPlayer == "True") {
         //If you are player 2 and player 1 sent the attack
-        if (isColliding(cursor, square)) {
+        if (isColliding(cursor, square) && !MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility) {
             myHP--;
             elementOrder[myHP].style.backgroundImage = "url('/static/assets/background.png')";
             socket.emit("UpdatePlayerHealth", [roomCode, "1", myHP]);
-            if(myHP == 0) {
-                //Player 1 lost all their hearts
-                cursor.style.display = 'none';
-                nametag1.style.display = 'none';
-                //Display some loss screen
-                //Perhaps play a loss sound
+            MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility = true;
+            cursor.classList.add('blink');
+            setTimeout(() => {
+                cursor.classList.remove('blink');
+                MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility = false;
+            }, 3000); // Remove the blink effect after 1 second
 
-                //Disconnect from server
-                socket.disconnect();
+            if(myHP == 0) {
+                currentScore[1] += 1;
+                scoreboard.textContent = currentScore[0] + " - " + currentScore[1];
+                
+                if (currentScore[1] == 3){
+                    //Player 1 won (you, player 2, lost)
+                    winlossscreen.style.display = 'flex';
+                    winLossMessage.textContent = "You lost!";
+                    cursor.style.display = 'none';
+                    nametag1.style.display = 'none';
+                    cursor2.style.display = 'none';
+                    nametag2.style.display = 'none';
+                    //Display some loss screen
+                    //Perhaps play a loss sound
+
+                    //Disconnect from server
+                    socket.disconnect();
+                }else{
+                //reset health and hp variables
+                myHP = 3;
+                for (let i = 0; i < elementOrderEnemy.length; i++) {
+                    elementOrderEnemy[i].style.backgroundImage = "url('/static/assets/heart.png')";
+                }
+                for (let i = 0; i < elementOrder.length; i++) {
+                    elementOrder[i].style.backgroundImage = "url('/static/assets/heart.png')";
+                }
+            }
             }
         }
     }
@@ -280,7 +383,7 @@ function handle_game_state(data) {
 }
 
 document.addEventListener('mousedown', (e) => {
-    if (e.button === 0 && canAttack) { // LMB
+    if (e.button === 0 && canAttack && !MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility) { // LMB
         //Perhaps show some attack animation?
         canAttack = false;
 

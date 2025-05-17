@@ -18,6 +18,72 @@
         background-color: red;
         /*visibility: hidden;*/
     }
+    #winLossScreen {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(135deg, #232526 0%, #414345 100%);
+        z-index: 20000;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        color: #fff;
+        font-size: 3em;
+        text-align: center;
+        box-shadow: 0 0 80px 20px rgba(0,0,0,0.7) inset;
+        animation: fadeInWinLoss 0.7s cubic-bezier(.4,2,.6,1) 1;
+    }
+    #winLossMessage {
+        font-size: 1.2em;
+        font-weight: bold;
+        margin-bottom: 0.5em;
+        letter-spacing: 2px;
+        text-shadow: 0 4px 24px #000, 0 1px 0 #fff2, 0 0 8px #fffa;
+        padding: 0.5em 1em;
+        border-radius: 16px;
+        background: rgba(0,0,0,0.25);
+        box-shadow: 0 2px 24px #0008;
+        border: 2px solid #fff3;
+        max-width: 90vw;
+    }
+    #playAgainBtn {
+        margin-top: 32px;
+        font-size: 1em;
+        padding: 16px 48px;
+        border: none;
+        border-radius: 16px;
+        background: linear-gradient(90deg, #ffecd2 0%, #fcb69f 100%);
+        color: #222;
+        cursor: pointer;
+        font-weight: bold;
+        box-shadow: 0 2px 16px #0005;
+        transition: background 0.2s, transform 0.1s;
+    }
+    #playAgainBtn:hover {
+        background: linear-gradient(90deg, #fcb69f 0%, #ffecd2 100%);
+        transform: scale(1.05);
+    }
+    .blink {
+    animation: blink 1s steps(1, end) infinite;
+    }
+    @keyframes blink {
+    0% { opacity: 1; }
+    25% { opacity: 0; }
+    50% { opacity: 1; }
+    75% { opacity: 0; }
+    100% { opacity: 1; }
+    }
+    @keyframes fadeInWinLoss {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes pulseHeart {
+        from { transform: scale(1); filter: drop-shadow(0 0 8px #ffb3); }
+        to { transform: scale(1.12); filter: drop-shadow(0 0 32px #fff8); }
+    }
 </style>
 </head>
 <body style="user-select: none; cursor: none;">
@@ -26,8 +92,8 @@
         <div id="heartImage2" style="image-rendering: pixelated;image-rendering: crisp-edges;width: 60px; height: 60px; background-image: url('static/assets/heart.png'); background-size: cover; position: absolute; top: 15px; left: 65px;"></div>   
         <div id="heartImage3" style="image-rendering: pixelated;image-rendering: crisp-edges;width: 60px; height: 60px; background-image: url('static/assets/heart.png'); background-size: cover; position: absolute; top: 15px; left: 125px;"></div>
     </div>
-    <div id="score" style="display: flex;justify-content: center;align-items: center;height: 8vh;">
-        <p style="color: black; font-size: xx-large;">0 - 0</p>
+    <div style="display: flex;justify-content: center;align-items: center;height: 8vh;">
+        <p id="score" style="color: black; font-size: xx-large;">0 - 0</p>
     </div>
     <div id="PointlessDiv2">
         <div id="altHeartImage" style="image-rendering: pixelated;image-rendering: crisp-edges;width: 60px; height: 60px; background-image: url('static/assets/heart.png'); background-size: cover; position: absolute; top: 15px; right: 5px;"></div>
@@ -38,6 +104,13 @@
     <div id="nametag1" style="position:absolute; left:0; top:0; pointer-events:none; z-index:10000; display:none; background:rgba(0,0,0,0.7); color:#fff; padding:2px 8px; border-radius:8px; font-size:14px; text-align:center; transform:translateY(-110%);"></div>
     <img id="cursor2" style="display:hidden; position:absolute; left:0; top:0; pointer-events:none; width:64px; height:64px; z-index:9999; display:none;" alt="Cat Cursor">
     <div id="nametag2" style="position:absolute; left:0; top:0; pointer-events:none; z-index:10000; display:none; background:rgba(0,0,0,0.7); color:#fff; padding:2px 8px; border-radius:8px; font-size:14px; text-align:center; transform:translateY(-110%);"></div>
+    <div id="winLossScreen">
+        <div id="winLossMessage"></div>
+        <button id="playAgainBtn" onclick="window.location.href='/'">Back to lobby</button>
+        <div style="margin-top:2em;">
+            <img src="static/assets/heart.png" alt="Heart" style="width:80px; height:80px; filter:drop-shadow(0 0 16px #fff8); animation: pulseHeart 1.2s infinite alternate;image-rendering: pixelated;image-rendering: crisp-edges;">
+        </div>
+    </div>
     <script src="static/js/fight/cursor.js"></script>
     <script src="static/js/fight/connect.js"></script>
     <script src="static/js/fight/main.js"></script>
