@@ -1,7 +1,8 @@
 //Everything the player sees during gameplay
 
 
-// TODO: Update the users wins and losses, also update exp + coins/money
+// TODO: Fix octal literals error and add quick play
+//Octal literals erro casued by the room code starting with 0 and then somewhere its being treated as an int... I think
 const cursor = document.getElementById('cursor1');
 const cursor2 = document.getElementById('cursor2');
 const nametag1 = document.getElementById('nametag1');
@@ -115,6 +116,7 @@ if (firstPlayer == "False") {
             firstPosQueue.push(data);
         }else{
             firstPosQueue = [] //Reset if too long
+            console.log("Other player is lagging, resetting queue");
         }
         
     });
@@ -125,6 +127,7 @@ if (firstPlayer == "False") {
             secondPosQueue.push(data);
         }else{
             secondPosQueue = [] //Reset if too long
+            console.log("Other player is lagging, resetting queue");
         }
         
     });
@@ -163,6 +166,14 @@ socket.on("updateHealth", function(data){
                 //Display some victory screen
                 //Perhaps play some victory sound
                 
+                //Will have to use post to update the stats
+                fetch('/updateStats', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ outcome: true })
+                });
 
                 //Disconnect from server
                 socket.disconnect();
@@ -201,6 +212,13 @@ socket.on("updateHealth", function(data){
                 //Display some victory screen
                 //Perhaps play some victory sound
                 
+                fetch('/updateStats', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ outcome: true })
+                });
 
                 //Disconnect from server
                 socket.disconnect();
@@ -262,6 +280,15 @@ socket.on("receiveAttack", function(data) {
                     //Display some loss screen
                     //Perhaps play a loss sound
 
+                    //say to the server that we lost
+                    fetch('/updateStats', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ outcome: false })
+                    });
+
                     //Disconnect from server
                     socket.disconnect();
                 }else{
@@ -304,6 +331,14 @@ socket.on("receiveAttack", function(data) {
                     nametag2.style.display = 'none';
                     //Display some loss screen
                     //Perhaps play a loss sound
+
+                    fetch('/updateStats', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ outcome: false })
+                    });
 
                     //Disconnect from server
                     socket.disconnect();
@@ -348,6 +383,9 @@ function update_game_state(data) {
     socket.emit("updateGameState", { "fightCode": roomCode, "username": username, "isPlayer1": localStorage.getItem("player"), "GameData": data });
 }
 
+pos = [100, 100, roomCode, [insideColor, outlineColor]];
+update_game_state(pos); //Send initial position
+
 setInterval(() => {
     canUpdate = true;
 }, 2000);
@@ -356,6 +394,7 @@ function handle_game_state(data) {
     const isPlayer1 = localStorage.getItem("player");
     if (isPlayer1 == "True") {//They are player 1 and testing if player 2 joined
         if (data.player2 != "None") {
+            console.log("Welcome:", data.player2.name);
             nametag2.textContent = data.player2.name;
             cursor2.style.display = 'block';
             cursor2Target.x = data.player2.data[0];

@@ -21,8 +21,6 @@ function updateCursorColors() {
     const matches_outline = color_outline.match(/\d+/g);
 
     const [r2, g2, b2] = matches_outline.map(Number);
-    console.log("Outline: ", r2, g2, b2);
-    console.log("Inside: ", r1, g1, b1);
 
     insideRedSlider.value = r1
     insideGreenSlider.value = g1
@@ -39,23 +37,46 @@ function updateCursorColors() {
   localStorage.setItem('cursorInsideColor', insideColor);
   localStorage.setItem('cursorOutlineColor', outlineColor);
 
-  fetch('static/cursors/cursor.svg')
-    .then(response => response.text())
-    .then(svgContent => {
-      const updatedSvg = svgContent
-        .replace(/fill="[^"]*"/, `fill="${insideColor}"`)
-        .replace(/stroke="[^"]*"/, `stroke="${outlineColor}"`);
-      
-      const blob = new Blob([updatedSvg], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
-      
-      // Update both cursor preview and icon
-      cursorPreview.src = url;
-      cursorIcon.src = url;
-      
-      // Clean up the old URL to prevent memory leaks
-      setTimeout(() => URL.revokeObjectURL(url), 100);
-    });
+  // Cache the original SVG in base64 in localStorage after first fetch
+  function getCachedSvg() {
+    return localStorage.getItem('cursorSvgBase64');
+  }
+
+  function setCachedSvg(base64) {
+    localStorage.setItem('cursorSvgBase64', base64);
+  }
+
+  function svgTextFromBase64(base64) {
+    return atob(base64);
+  }
+
+  function svgToBase64(svgText) {
+    return btoa(unescape(encodeURIComponent(svgText)));
+  }
+
+  function updateCursorFromSvg(svgText) {
+    const updatedSvg = svgText
+      .replace(/fill="[^"]*"/, `fill="${insideColor}"`)
+      .replace(/stroke="[^"]*"/, `stroke="${outlineColor}"`);
+    const blob = new Blob([updatedSvg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    cursorPreview.src = url;
+    cursorIcon.src = url;
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  }
+
+  const cachedBase64 = getCachedSvg();
+  if (cachedBase64) {
+    const svgText = svgTextFromBase64(cachedBase64);
+    updateCursorFromSvg(svgText);
+  } else {
+    fetch('static/cursors/cursor.svg')
+      .then(response => response.text())
+      .then(svgContent => {
+        setCachedSvg(svgToBase64(svgContent));
+        updateCursorFromSvg(svgContent);
+      });
+  }
 }
 
 // Add event listeners to all sliders

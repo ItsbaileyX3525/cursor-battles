@@ -27,11 +27,6 @@ function reconnect(){
     return true
 }
 
-function Logout(){
-    localStorage.clear()
-    window.location.href = '../Login'
-}
-
 socket.on("disconnect", (e) => {
     console.log("You have been disconnected from the server, please refresh the page to reconnect, or type /connect when you have a stable internet connection.", e)
     isDisconnected = true

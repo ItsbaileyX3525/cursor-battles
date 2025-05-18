@@ -38,6 +38,7 @@ body {
   align-items: center;
   min-height: 100vh;
   padding: var(--spacing-md);
+  position: relative;
 }
 
 body.dark {
@@ -334,6 +335,37 @@ body.dark {
 
 .join-code::placeholder {
   color: var(--neutral-medium);
+}
+
+.logout-button {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  background: #1e90ff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 28px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(30,144,255,0.15);
+  transition: background 0.2s, box-shadow 0.2s;
+  z-index: 100;
+}
+
+.logout-button:hover {
+  background: #1565c0;
+  box-shadow: 0 4px 16px rgba(30,144,255,0.25);
+}
+
+.darkmode-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+
+  cursor: pointer;
+  z-index: 100;
 }
 
 @media (max-width: 768px) {

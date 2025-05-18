@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register/Login</title>
+    <link rel="stylesheet" href="/static/css/account.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2>Welcome</h2>
+            <div class="tab-group">
+                <button class="tab active" id="loginTab" onclick="showTab('login')">Login</button>
+                <button class="tab" id="registerTab" onclick="showTab('register')">Register</button>
+            </div>
+            <form id="loginForm" class="auth-form">
+                <input type="text" placeholder="Username" name="username" required>
+                <input type="password" placeholder="Password" name="password" required>
+                <button type="submit" class="auth-btn">Login</button>
+            </form>
+            <form id="registerForm" class="auth-form" style="display:none;">
+                <input type="text" placeholder="Email" name="email" required>
+                <input type="text" placeholder="Username" name="username" required>
+                <input type="password" placeholder="Password" name="password" required>
+                <input type="password" placeholder="Confirm Password" name="confirm_password" required>
+                <button type="submit" class="auth-btn">Register</button>
+            </form>
+        </div>
+    </div>
+    <script src="static/js/account/connect.js"></script>
+    <script src="static/js/account/main.js"></script>
+
+</body>
+</html>

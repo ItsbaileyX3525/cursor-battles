@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lobby</title>
   <link rel="stylesheet" href="static/css/styles.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
 
 </head>
 <body>
@@ -51,48 +51,72 @@
         </div>
       </div>
     </div>
-
+    
     <div class="game-panel">
       <div class="profile-card">
         <div class="profile-header">
-          <div class="profile-name">Name: Guest</div>
-          <div class="profile-id">ID</div>
+          <data id="username" style="display: none;">{{ userData["username"] }}</data>
+          <div class="profile-name">Name: {{ userData["username"] }}</div>
+          <div class="profile-id">ID: {{ userData["id"] }}</div>
         </div>
         <div class="profile-stats">
           <div class="cursor-icon">
             <img src="static/cursor/cursor.svg" alt="Cursor" width="40" height="40">
           </div>
           <div class="stats-info">
-            <div id="WinsInfo">Wins: 1</div>
-            <div id="LvlInfo">LVL: 1</div>
+            <div id="WinsInfo">Wins: {{ userData["wins"] }}</div>
+            <div id="LvlInfo">LVL: {{ userData["level"] }}</div>
             <div class="level-progress">
+              <data id="current-exp" style="display: none;">{{ userData["exp"] }}</data>
+              <data id="exp-required" style="display: none;">{{ userData["exp_required"] }}</data>
               <div class="progress-fill" style="width: 50%;"></div>
             </div>
           </div>
         </div>
         <div class="coins-section">
-          <div>Coins:</div>
+          <div>Coins: {{ userData["coins"] }}</div>
         </div>
       </div>
 
       <div class="game-actions">
         <div class="play-button">
-          Play
-        </div>
-        <div class="create-game-button">
-          Create Game
+          Quick Play
         </div>
       </div>
 
       <div class="join-section">
         <div class="join-label">Join:</div>
         <input type="text" class="join-code" maxlength="5" placeholder="00000" pattern="[0-9]*">      
-    </div>
-        <div class="join-button">
-          Join Game
-        </div>
+      </div>
+      <div class="join-button">
+        Join Game
+      </div>
+      <div class="darkmode-button" onclick="localStorage.setItem('darkmode', 'true'); location.reload();">
+      <img style="max-width: 80px;max-height: 80px;" src="static/assets/lightmode.svg"></img>
+      </div>
+      <div class="logout-button" onclick="window.location.href='/logout'">
+        Logout
+      </div>
     </div>
   </div>
+  <script>
+    const logoutButton = document.querySelector('.logout-button');
+    const darkmodeButton = document.querySelector('.darkmode-button');
+    const darkmode = localStorage.getItem('darkmode');
+    if ( "{{ userData['username'] }}" === "Guest" ){
+      logoutButton.textContent = "Login";
+      logoutButton.onclick = function() {
+        window.location.href = '/account';
+      }
+    }
+    if(darkmode === 'true') {
+      darkmodeButton.children[0].src = "static/assets/darkmode.svg";
+      darkmodeButton.onclick = function() {
+        localStorage.setItem('darkmode', 'false');
+        location.reload();
+      };
+    }
+  </script>
   <script type="module" src="static/js/lobby/load.js"></script>
   <script type="module" src="static/js/lobby/cursor.js"></script>
   <script type="module" src="static/js/lobby/connect.js"></script>
