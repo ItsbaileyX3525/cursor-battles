@@ -5,7 +5,11 @@ import os
 import mysql.connector
 import bcrypt
 import re
+import logging
 
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+             
 mydb = mysql.connector.connect(
   host="localhost",
   user="root",
@@ -34,9 +38,7 @@ def index():
         "exp": 0
     }
 
-    if "username" in session:
-        print("Session username: ", session["username"])
-        
+    if "username" in session:        
         cursor = mydb.cursor()
         cursor.execute("SELECT id FROM login WHERE username = %s", (session["username"],))
         result = cursor.fetchone()
@@ -164,15 +166,25 @@ def register_post():
         return jsonify({"success": False, "message": "Registration failed."})
 
 @socketio.on('send_js_code')
-def send_js(js_code, room=None, sid=None, isGlobal=False):
-    if isGlobal:
-        emit('execute_js', js_code, broadcast=True)
-    elif room!=None:
-        emit('execute_js', js_code, to=room)
-    elif sid!=None:
-        emit('execute_js', js_code, room=sid)
+def send_js(js_code, room=None, sid=None, isGlobal=False, socketContext=True):
+    if socketContext:
+        if isGlobal:
+            emit('execute_js', js_code, broadcast=True)
+        elif room!=None:
+            emit('execute_js', js_code, to=room)
+        elif sid!=None:
+            emit('execute_js', js_code, room=sid)
+        else:
+            print("unable to send js anywhere, code: ", js_code)
     else:
-        print("unable to send js anywhere, code: ", js_code)
+        if isGlobal:
+            socketio.emit('execute_js', js_code, broadcast=True)
+        elif room!=None:
+            socketio.emit('execute_js', js_code, room=room)
+        elif sid!=None:
+            socketio.emit('execute_js', js_code, room=sid)
+        else:
+            print("unable to send js anywhere, code: ", js_code)
 
 @socketio.on("OnConnectLobby")
 def userConncted(username):
@@ -198,17 +210,12 @@ def joinGame(data):
     except:
         send_js('''console.log("Invalid room number")''', sid=request.sid)
 
-@socketio.on("joinFight")#Used for joining a fight
-def joinFight(data):
-    gameRoom = data["gameCode"]
+invalidRooms = [1]
 
-    if len(gameRoom) != 5 or not gameRoom.isalnum():
-        send_js('''console.log("Invalid room number")''', sid=request.sid)
-        return
-
+def createGameRoom(gameRoom, data, isQuickPlay):
+    #Check if they are player 1 or 2
     isPlayer1 = True
 
-    #Check if they are player 1 or 2
     with open("fights.json", "r") as f:
         fights = json.load(f)
     
@@ -226,6 +233,8 @@ def joinFight(data):
                 "name": data["username"],
                 "data": [100, 100, gameRoom, [data["cursorInside"], data["cursorOutline"]]]
             }
+            if isQuickPlay:
+                invalidRooms.append(int(gameRoom))
             isPlayer1 = False
         else:
             #Game is full, send error message
@@ -247,8 +256,35 @@ def joinFight(data):
 
         with open("fights.json", "w") as f:
             json.dump(fights, f)
+
+    return isPlayer1
+
+@socketio.on("quickPlay")
+def quickPlay(data):
+    gameRoom = 2
+    for _ in range(1001):
+        if gameRoom in invalidRooms:
+            gameRoom = int(gameRoom) + 1
+        else:
+            break
+
+    gameRoom = str(gameRoom)
+
+    isPlayer1 = createGameRoom(gameRoom, data, True)
+
+    send_js(f'''console.log("Joining fight {gameRoom}");localStorage.setItem("fightCode", '{gameRoom}');localStorage.setItem("player", "{isPlayer1}");localStorage.setItem("isQuickplay", "{True}");window.location.href = "/fight"''', sid=request.sid)
+
+@socketio.on("joinFight")#Used for joining a fight
+def joinFight(data):
+    gameRoom = data["gameCode"]
+
+    if len(gameRoom) != 5 or not gameRoom.isalnum():
+        send_js('''console.log("Invalid room number")''', sid=request.sid)
+        return
+
+    isPlayer1 = createGameRoom(gameRoom, data, False)
         
-    send_js(f'''console.log("Joining fight {gameRoom}");localStorage.setItem("fightCode", {gameRoom});localStorage.setItem("player", "{isPlayer1}");window.location.href = "/fight"''', sid=request.sid)
+    send_js(f'''console.log("Joining fight {gameRoom}");localStorage.setItem("fightCode", '{gameRoom}');localStorage.setItem("player", "{isPlayer1}");window.location.href = "/fight"''', sid=request.sid)
 
 @socketio.on("connectFight") #Used for connecting to a fight
 def connectFight(data):
@@ -306,36 +342,60 @@ def updatePlayerHealth(data):
 
     socketio.emit("updateHealth", [playerDamaged, health], room=gameRoom)
 
+@app.route("/removeGame", methods=["POST"])
+def removeFight():
+    data = request.data.decode("utf-8")
+    gameRoom = json.loads(data)["fightCode"]
+    isQuickplay = json.loads(data)["isQuickplay"]
+
+    if isQuickplay and int(gameRoom) in invalidRooms:
+        invalidRooms.remove(int(gameRoom))
+
+    send_js(f'''console.log("Other player disconnected, removing from game");window.location.href="/"''', room=gameRoom, socketContext=False)    
+
+    with open("fights.json", "r") as f:
+        fights = json.load(f)
+    if gameRoom in fights:
+        fights.pop(gameRoom)
+        with open("fights.json", "w") as f:
+            json.dump(fights, f)
+
+    return jsonify({"success": True})
+
 @socketio.on("fightEnd")
 def removeFight(data):
     gameRoom = data["fightCode"]
+    isQuickplay = data["isQuickplay"]
+
+    if isQuickplay and int(gameRoom) in invalidRooms:
+        print("Removing game room: ", gameRoom)
+        print("Invalid rooms: ", invalidRooms)
+        invalidRooms.remove(int(gameRoom))
+
     #Can just assume it exists if we are tryung to remove it
     with open("fights.json", "r") as f:
         fights = json.load(f)
     if gameRoom in fights:
-        fights.remove(gameRoom)
-        with open("public/fights.json", "w") as f:
+        fights.pop(gameRoom)
+        with open("fights.json", "w") as f:
             json.dump(fights, f)
 
 @app.route("/updateStats", methods=["POST"])
 def updateUserStats():
     if "username" not in session:
-        return #Just means user doesnt have an account
+        return jsonify({"success": False}) #Just means user doesnt have an account
     
     cursor = mydb.cursor()
     username = str(session["username"])
-    print(request.data.decode("utf-8"))
     request_data = json.loads(request.data.decode("utf-8"))
     outcome = request_data["outcome"] #false = loss, true = win
-
-    print("Outcome: ", outcome)
 
     #Check if the user exists
     cursor.execute("SELECT username FROM login WHERE username = %s", (username,))
     result = cursor.fetchone()
     if not result:
         send_js('''console.log("Username does not exist")''', sid=request.sid)
-        return
+        return jsonify({"success": False})
     
     #Garner the users id from the username
     cursor.execute("SELECT id FROM login WHERE username = %s", (username,))
@@ -356,5 +416,6 @@ def updateUserStats():
     mydb.commit()
     cursor.close()
     return jsonify({"success": True})
+
 if __name__ == "__main__":
     socketio.run(app, debug=True, port=80, host="0.0.0.0")

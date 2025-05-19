@@ -6,6 +6,7 @@ const username = localStorage.getItem("username") || "Guest";
 const roomCode = 1 //Lobby
 
 const joinButton = document.querySelector(".join-button");
+const quickPlayButton = document.querySelector(".play-button")
 
 socket.on("connect", () => {
     console.log("Connected to server.");
@@ -36,6 +37,13 @@ socket.on("connect_error", (e) => {
     console.log("Failed to connect to server, please refresh the page to reconnect, or try something else when you have a stable internet connection.", e)
     isDisconnected = true
   });
+
+quickPlayButton.addEventListener("click", () => {
+    const inside = localStorage.getItem('cursorInsideColor');
+    const outline = localStorage.getItem('cursorOutlineColor');
+
+    socket.emit('quickPlay', { "username": username, "cursorInside":  inside, "cursorOutline": outline });
+});
 
 joinButton.addEventListener("click", () => {
     const joinCode = document.querySelector(".join-code").value;

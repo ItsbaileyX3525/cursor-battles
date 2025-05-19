@@ -289,8 +289,10 @@ socket.on("receiveAttack", function(data) {
                         body: JSON.stringify({ outcome: false })
                     });
 
+                    socket.emit("fightEnd", {fightCode: roomCode, isQuickplay: localStorage.getItem("isQuickplay") || "False"}); //Only need to send once
+
                     //Disconnect from server
-                    socket.disconnect();
+                    socket.disconnect(); //Sends io client disconnect
                 }else{
                     //reset health and hp variables
                     myHP = 3;
@@ -358,10 +360,16 @@ socket.on("receiveAttack", function(data) {
 
 })
 
-socket.on("disconnect", function(data) {
-    if (data == "io client disconnect"){
-        //idk what I was gonna put here tbh
-        pass
+socket.on("disconnect", async function(data) {
+    if (data != "io client disconnect"){
+        await fetch('/removeGame', { //Remove game from server if client disconnects (only works if they regain connection tho)
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ fightCode: roomCode, isQuickplay: localStorage.getItem("isQuickplay") || "False" })
+        });
+        window.location.href = "/";
     }
 });
 
