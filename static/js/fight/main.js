@@ -251,7 +251,7 @@ socket.on("receiveAttack", function(data) {
     body.appendChild(square);
     setTimeout(() => {
         body.removeChild(square);
-    }, 1000); // Remove the square after 1 second
+    }, 500); // Remove the square after 1 second
 
     if(isPlayer1 == "True" && firstPlayer == "False") {
         //You are player 1 and player 2 sent the attack

@@ -1,23 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap" rel="stylesheet">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIGHT!</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
 <style>
+
+    #score{
+        font-family: "Oswald", sans-serif;
+        font-optical-sizing: auto;
+        font-style: bold;
+    }
+    
+    
+    
     html, body {
         height: 100%;
         width: 100%;
         cursor: none !important;
     }
+    
     .square {
         position: absolute;
         width: 80px;
         height: 80px;
-        background-color: red;
-        /*visibility: hidden;*/
-    }
+        background-image: url("https://www.pngmart.com/files/23/Hit-Marker-PNG.png");
+        background-size: 50% 50%; /* Ensures the image resizes to fill the container */
+        background-repeat: no-repeat;
+        z-index: -100;
+}
     #winLossScreen {
         display: none;
         position: fixed;

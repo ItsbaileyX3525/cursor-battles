@@ -16,9 +16,11 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
         // handle login response
         if (data.success) {
             // Redirect or update UI as needed
+            localStorage.setItem("username", str(data.message))
             window.location.reload();
         } else {
             alert(data.message || "Login failed.");
+            localStorage.setItem("username", "Guest")
         }
     })
     .catch(() => {
@@ -42,9 +44,11 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
         // handle registration response
         if (data.success) {
             // Redirect or update UI as needed
+            localStorage.setItem("username", str(data.message))
             window.location.reload();
         } else {
             alert(data.message || "Registration failed.");
+            localStorage.setItem("username", "Guest")
         }
     })
     .catch(() => {

@@ -99,7 +99,7 @@ def login_post():
         if bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8")):
             session["username"] = username
             session.permanent = True
-            return jsonify({"success": True})
+            return jsonify({"success": True, "message": username})
         else:
             return jsonify({"success": False, "message": "Incorrect password."})
     except Exception as e:
@@ -159,7 +159,7 @@ def register_post():
         session["username"] = username
         session.permanent = True
         cursor.close()
-        return jsonify({"success": True})
+        return jsonify({"success": True, "message": username})
     except Exception as e:
         return jsonify({"success": False, "message": "Registration failed."})
 
