@@ -16,15 +16,15 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
         // handle login response
         if (data.success) {
             // Redirect or update UI as needed
-            localStorage.setItem("username", str(data.message))
+            localStorage.setItem("username", String(data.message))
             window.location.reload();
         } else {
             alert(data.message || "Login failed.");
             localStorage.setItem("username", "Guest")
         }
     })
-    .catch(() => {
-        alert("An error occurred during login.");
+    .catch((e) => {
+        alert("An error occurred during login. " + e);
     });
 });
 
@@ -44,14 +44,14 @@ document.getElementById('registerForm').addEventListener('submit', function(e) {
         // handle registration response
         if (data.success) {
             // Redirect or update UI as needed
-            localStorage.setItem("username", str(data.message))
+            localStorage.setItem("username", String(data.message));
             window.location.reload();
         } else {
             alert(data.message || "Registration failed.");
             localStorage.setItem("username", "Guest")
         }
     })
-    .catch(() => {
-        alert("An error occurred during registration.");
+    .catch((e) => {
+        alert("An error occurred during registration. " + e);
     });
 });

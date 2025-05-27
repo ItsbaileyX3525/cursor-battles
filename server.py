@@ -6,6 +6,8 @@ import mysql.connector
 import bcrypt
 import re
 import logging
+import uuid
+import time
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
@@ -13,8 +15,8 @@ log.setLevel(logging.ERROR)
 mydb = mysql.connector.connect(
   host="localhost",
   user="root",
-  password="FuckGhost44",
-  database="users"
+  password="",
+  database="cursor_fight"
 )
 
 
@@ -211,6 +213,7 @@ def joinGame(data):
         send_js('''console.log("Invalid room number")''', sid=request.sid)
 
 invalidRooms = [1]
+gameTokens = {}
 
 def createGameRoom(gameRoom, data, isQuickPlay):
     #Check if they are player 1 or 2
@@ -223,15 +226,38 @@ def createGameRoom(gameRoom, data, isQuickPlay):
         #Game exists, check if it has a player already present for resuability
         if fights[gameRoom]["player1"] == "None":
             #Player 1 is empty, assign them to player 1
+
+            gameToken = str(uuid.uuid4())
+            gameTokens[gameRoom] = gameToken
+
             fights[gameRoom]["player1"] = {
                 "name": data["username"],
-                "data": [100, 100, gameRoom, [data["cursorInside"], data["cursorOutline"]]]
+                "data": {
+                    "pos_x": 100, 
+                    "pos_y": 100, 
+                    "room_code": gameRoom, 
+                    "cursor_data": [data["cursorInside"], data["cursorOutline"]],
+                    "health": 3,
+                    "atkCooldown": 0,
+                    "invincibility": time.time(),
+                    "points" : 0,
+                }
             }
         elif fights[gameRoom]["player2"] == "None":
             #Player 2 is empty, assign them to player 2
             fights[gameRoom]["player2"] = {
                 "name": data["username"],
-                "data": [100, 100, gameRoom, [data["cursorInside"], data["cursorOutline"]]]
+                "data": {
+                    "pos_x": 100, 
+                    "pos_y": 100, 
+                    "room_code": gameRoom, 
+                    "cursor_data": [data["cursorInside"], data["cursorOutline"]],
+                    "health": 3,
+                    "atkCooldown": 0,
+                    "invincibility": time.time(),
+                    "points" : 0,
+                
+                }
             }
             if isQuickPlay:
                 invalidRooms.append(int(gameRoom))
@@ -249,7 +275,17 @@ def createGameRoom(gameRoom, data, isQuickPlay):
         fights[gameRoom] = {
             "player1": {
                 "name": data["username"],
-                "data": [0, 0, gameRoom, [data["cursorInside"], data["cursorOutline"]]]
+                "data": {
+                    "pos_x": 100, 
+                    "pos_y": 100, 
+                    "room_code": gameRoom, 
+                    "cursor_data": [data["cursorInside"], data["cursorOutline"]],
+                    "health": 3,
+                    "atkCooldown": 0,
+                    "invincibility": time.time(),
+                    "points" : 0,
+                
+                }
             },
             "player2": "None"
         }
@@ -300,39 +336,120 @@ def connectFight(data):
     
     join_room(gameRoom)
 
-@socketio.on("updateGameState")
-def updateGameState(data):
-    gameRoom = data["fightCode"]
-    gameData = data["GameData"]
-    isPlayer1 = data["isPlayer1"]
-    
-    with open("fights.json", "r") as f:
-        fights = json.load(f)
-        if isPlayer1 == "True":
-            fights[gameRoom]["player1"]["data"] = gameData
-        elif isPlayer1 == "False":
-            fights[gameRoom]["player2"]["data"] = gameData
-        
-    with open("fights.json", "w") as f:
-        json.dump(fights, f)
+#Make position update every 45 times a second
+TIMER_DURATION = 1/45
+start_time = time.time()
 
 #Handle movement
 @socketio.on("updateSecondPosition")
 def sendSecondPosToFirst(pos):
+    global start_time
     socketio.emit("SecondPos", pos, room=pos[2])
+
+    if time.time() - start_time < TIMER_DURATION:
+        return
+    with open("fights.json", "r") as f:
+        fights = json.load(f)
+    if pos[2] in fights:
+        fights[pos[2]]["player2"]["data"]["pos_x"] = pos[0]
+        fights[pos[2]]["player2"]["data"]["pos_y"] = pos[1]
+    
+    json.dump(fights, open("fights.json", "w"))
+
+    start_time = time.time()  # Reset the timer
+
 
 @socketio.on("updateFirstPosition")
 def sendFirstPosToSecond(pos):
+    global start_time
+    #This is player one sending the packet
     socketio.emit("FirstPos", pos, room=pos[2])
+
+    if time.time() - start_time < TIMER_DURATION:
+        return
+    
+    with open("fights.json", "r") as f:
+        fights = json.load(f)
+    if pos[2] in fights:
+        fights[pos[2]]["player1"]["data"]["pos_x"] = pos[0]
+        fights[pos[2]]["player1"]["data"]["pos_y"] = pos[1]
+    
+    json.dump(fights, open("fights.json", "w"))
+    start_time = time.time()  # Reset the timer
+
+def is_colliding(r1, r2):
+
+
+	return not (
+		r1['right'] - 12 < r2['left'] or
+		r1['left'] - 12 > r2['right'] or
+		r1['bottom'] - 12 < r2['top'] or
+		r1['top'] - 12 > r2['bottom']
+	)
 
 @socketio.on("attackPlayer")
 def sendPlayerAttack(data):
-    gameRoom = data["fightCode"]
-    attackData = data["attackData"]
-    attackData.append(data["isPlayer1"])
+    gameRoom = data[0]
+    isPlayer1 = data[1] == "True"
+    print(gameRoom)
+    print(isPlayer1)
+    
+    with open("fights.json", "r") as f:
+        fights = json.load(f)
 
-    #Now deadass we just send the attack to the other player, simple...
+
+    if isPlayer1:
+        attackData = [fights[gameRoom]["player1"]["data"]["pos_x"],fights[gameRoom]["player1"]["data"]["pos_y"], True]
+    else:
+        attackData = [fights[gameRoom]["player2"]["data"]["pos_x"],fights[gameRoom]["player2"]["data"]["pos_y"], False]
+
+    print("Attack data: ", attackData)
+
+    if isPlayer1:
+        if gameRoom in fights:
+            if (float(time.time()) - float(fights[gameRoom]["player1"]["data"]["atkCooldown"])) < 0:
+                return
+            else:
+                cdTime = float(time.time() + .75)
+                fights[gameRoom]["player1"]["data"]["atkCooldown"] = cdTime
+
+    elif not isPlayer1:
+        if gameRoom in fights:
+            if (float(time.time()) - float(fights[gameRoom]["player2"]["data"]["atkCooldown"])) < 0:
+                return
+            else:
+                cdTime = float(time.time() + .75)
+                fights[gameRoom]["player2"]["data"]["atkCooldown"] = cdTime
+
+    #Now deadass we just send the attack display to the other player
     socketio.emit("receiveAttack", attackData, room=gameRoom)
+    if fights[gameRoom]["player1"]["data"]["invincibility"] > time.time() or fights[gameRoom]["player2"]["data"]["invincibility"] > time.time():
+        return #Invincible, means that we are on the 3s cooldown
+    
+    if not isPlayer1:
+        if is_colliding({"left": attackData[0],"right": attackData[0] + 80,"top": attackData[1],"bottom": attackData[1] + 80},{"left": fights[gameRoom]["player1"]["data"]["pos_x"],"right": fights[gameRoom]["player1"]["data"]["pos_x"] + 64,"top": fights[gameRoom]["player1"]["data"]["pos_y"],"bottom": fights[gameRoom]["player1"]["data"]["pos_y"] + 64}):
+            fights[gameRoom]["player1"]["data"]["health"] -= 1
+            socketio.emit("playerHit", { "hit": "player1" }, room=gameRoom)
+            if fights[gameRoom]["player1"]["data"]["health"] <= 0:
+                fights[gameRoom]["player2"]["data"]["points"] += 1
+                fights[gameRoom]["player1"]["data"]["health"] = 3
+                fights[gameRoom]["player2"]["data"]["health"] = 3
+            else:
+                fights[gameRoom]["player1"]["data"]["invincibility"] = time.time() + 3
+    else:
+        if is_colliding({"left": attackData[0],"right": attackData[0] + 80,"top": attackData[1],"bottom": attackData[1] + 80},{"left": fights[gameRoom]["player2"]["data"]["pos_x"],"right": fights[gameRoom]["player2"]["data"]["pos_x"] + 64,"top": fights[gameRoom]["player2"]["data"]["pos_y"],"bottom": fights[gameRoom]["player2"]["data"]["pos_y"] + 64}):
+            fights[gameRoom]["player2"]["data"]["health"] -= 1
+            socketio.emit("playerHit", { "hit": "player2" }, room=gameRoom)
+            if fights[gameRoom]["player2"]["data"]["health"] <= 0:
+                fights[gameRoom]["player1"]["data"]["points"] += 1
+                fights[gameRoom]["player1"]["data"]["health"] = 3
+                fights[gameRoom]["player2"]["data"]["health"] = 3
+                
+            else:
+                fights[gameRoom]["player2"]["data"]["invincibility"] = time.time() + 3
+
+    socketio.emit("updateGameState", fights[gameRoom], room=gameRoom)
+    json.dump(fights, open("fights.json", "w"))
 
 @socketio.on("UpdatePlayerHealth")
 def updatePlayerHealth(data):
@@ -389,6 +506,14 @@ def updateUserStats():
     username = str(session["username"])
     request_data = json.loads(request.data.decode("utf-8"))
     outcome = request_data["outcome"] #false = loss, true = win
+    gameRoom = request_data["fightCode"]
+
+    gameToken = gameTokens.get(gameRoom, None)
+    if gameToken is None:
+        send_js('''console.log("Game room does not exist")''', sid=request.sid)
+        return jsonify({"success": False})
+    
+    gameTokens.pop(gameRoom, None) #Remove the game token after the fight is over
 
     #Check if the user exists
     cursor.execute("SELECT username FROM login WHERE username = %s", (username,))

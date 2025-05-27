@@ -29,12 +29,9 @@ let canAttack = true;
 
 let canUpdate = true;
 
-let firstPlayer = localStorage.getItem("player"); //True if is player 1
+let firstPlayer = localStorage.getItem("player") || "True"; //True if is player 1
 nametag1.textContent = localStorage.getItem("username") || "Guest";
 
-let MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility = false;
-let currentScore = [0,0];
-let myHP = 3;
 let cursor2Current = { x: 0, y: 0 };
 let cursor2Target = { x: 0, y: 0 };
 let lerpSpeed = 0.15; // Adjust for smoothness
@@ -77,6 +74,7 @@ function isColliding(el1, el2) {
 }
 
 function processSocketUpdates() {
+    const data = firstPosQueue.shift();
     if (firstPlayer == "False") { // Receiving stuff from the host
         if (firstPosQueue.length > 0) {
             const data = firstPosQueue.shift();
@@ -104,7 +102,6 @@ function processSocketUpdates() {
             updatePlayer2CursorColors(secondPos[3]);
         }
     }
-
     requestAnimationFrame(processSocketUpdates); // Continue processing updates
 }
 
@@ -116,7 +113,6 @@ if (firstPlayer == "False") {
             firstPosQueue.push(data);
         }else{
             firstPosQueue = [] //Reset if too long
-            console.log("Other player is lagging, resetting queue");
         }
         
     });
@@ -127,7 +123,6 @@ if (firstPlayer == "False") {
             secondPosQueue.push(data);
         }else{
             secondPosQueue = [] //Reset if too long
-            console.log("Other player is lagging, resetting queue");
         }
         
     });
@@ -136,104 +131,55 @@ if (firstPlayer == "False") {
 // Start processing updates
 requestAnimationFrame(processSocketUpdates);
 
-socket.on("updateHealth", function(data){
-    //Called when the player gets hurt
-    const playerDamanged = data[0];
-    const newEnemyHP = data[1];
+socket.on("playerHit", function(data){
+    const player_hit = data["hit"];
 
-    if(firstPlayer == "True" && playerDamanged == "2"){ 
-        //You are player 1 and player 2 got hurt, so update player 2s heart
-        elementOrderEnemy[newEnemyHP].style.backgroundImage = "url('/static/assets/background.png')";
-        
-        //Player hit so give them blink effect to indicate invincibility
-        cursor2.classList.add('blink');
+    if(player_hit == "player1" && firstPlayer == "True"){
+        cursor1.class.add("blink");
         setTimeout(() => {
-            cursor2.classList.remove('blink');
-        }, 3000); // Remove the blink effect
-
-        if(newEnemyHP == 0){
-            //Update scoreboard, player 2 lost all hearts so update my score
-            currentScore[0] += 1;
-            scoreboard.textContent = currentScore[0] + " - " + currentScore[1];
-
-            if (currentScore[0] == 3){//you, player 1, won
-                winlossscreen.style.display = 'flex';
-                winLossMessage.textContent = "You won!";
-                cursor.style.display = 'none';
-                nametag1.style.display = 'none';
-                cursor2.style.display = 'none';
-                nametag2.style.display = 'none';
-                //Display some victory screen
-                //Perhaps play some victory sound
-                
-                //Will have to use post to update the stats
-                fetch('/updateStats', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ outcome: true })
-                });
-
-                //Disconnect from server
-                socket.disconnect();
-            }else{
-                //reset health and hp variables
-                myHP = 3;
-                for (let i = 0; i < elementOrderEnemy.length; i++) {
-                    elementOrderEnemy[i].style.backgroundImage = "url('/static/assets/heart.png')";
-                }
-                for (let i = 0; i < elementOrder.length; i++) {
-                    elementOrder[i].style.backgroundImage = "url('/static/assets/heart.png')";
-                }
-            }
-        }
-    }else if(firstPlayer == "False" && playerDamanged == "1"){ 
-        //You are player 2 and player 1 got hurt, so update player 1s heart
-        elementOrderEnemy[newEnemyHP].style.backgroundImage = "url('/static/assets/background.png')";
-        
-        //Player hit so give them blink effect to indicate invincibility
-        cursor2.classList.add('blink');
+            cursor1.classList.remove("blink");
+        }, 3000);
+    }else if(player_hit == "player1" && firstPlayer == "False"){
+        cursor2.classList.add("blink");
         setTimeout(() => {
-            cursor2.classList.remove('blink');
-        }, 3000); // Remove the blink effect
+            cursor2.classList.remove("blink");
+        }, 3000);
+    }
 
-        if(newEnemyHP == 0){
-            currentScore[0] += 1;
-            scoreboard.textContent = currentScore[0] + " - " + currentScore[1];
+    if(player_hit == "player2" && firstPlayer == "True"){
+        cursor2.classList.add("blink");
+        setTimeout(() => {
+            cursor2.classList.remove("blink");
+        }, 3000);
+    }else if(player_hit == "player2" && firstPlayer == "False"){
+        cursor1.classList.add("blink");
+        setTimeout(() => {
+            cursor1.classList.remove("blink");
+        }, 3000);
+    }
 
-            if (currentScore[0] == 3){//you, player 2, won
-                winlossscreen.style.display = 'flex';
-                winLossMessage.textContent = "You won!";
-                cursor.style.display = 'none';
-                nametag1.style.display = 'none';
-                cursor2.style.display = 'none';
-                nametag2.style.display = 'none';
-                //Display some victory screen
-                //Perhaps play some victory sound
-                
-                fetch('/updateStats', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ outcome: true })
-                });
+})
 
-                //Disconnect from server
-                socket.disconnect();
-            }else{
-                //reset health and hp variables
-                myHP = 3;
-                for (let i = 0; i < elementOrderEnemy.length; i++) {
-                    elementOrderEnemy[i].style.backgroundImage = "url('/static/assets/heart.png')";
-                }
-                for (let i = 0; i < elementOrder.length; i++) {
-                    elementOrder[i].style.backgroundImage = "url('/static/assets/heart.png')";
-                }
-            }
-        }
-    }    
+socket.on("updateGameState", function(data){
+    const player1_health = data.player1.data["health"];
+    const player2_health = data.player2.data["health"];
+    const player1_score = data.player1.data["points"];
+    const player2_score = data.player2.data["points"];
+
+    if(firstPlayer == "True") {
+        scoreboard.textContent = `Score: ${player1_score} - ${player2_score}`;
+    } else {
+        scoreboard.textContent = `Score: ${player2_score} - ${player1_score}`;
+    }
+    
+    myHeart1.style.display = player1_health >= 1 ? 'block' : 'none';
+    myHeart2.style.display = player1_health >= 2 ? 'block' : 'none';
+    myHeart3.style.display = player1_health >= 3 ? 'block' : 'none';
+    enemyHeart1.style.display = player2_health >= 1 ? 'block' : 'none';
+    enemyHeart2.style.display = player2_health >= 2 ? 'block' : 'none';
+    enemyHeart3.style.display = player2_health >= 3 ? 'block' : 'none';
+
+
 })
 
 socket.on("receiveAttack", function(data) {
@@ -252,112 +198,6 @@ socket.on("receiveAttack", function(data) {
     setTimeout(() => {
         body.removeChild(square);
     }, 500); // Remove the square after 1 second
-
-    if(isPlayer1 == "True" && firstPlayer == "False") {
-        //You are player 1 and player 2 sent the attack
-        if (isColliding(cursor, square) && !MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility) {
-            myHP--;
-            elementOrder[myHP].style.backgroundImage = "url('/static/assets/background.png')";
-            socket.emit("UpdatePlayerHealth", [roomCode, "2", myHP]);
-            MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility = true;
-            cursor.classList.add('blink');
-            setTimeout(() => {
-                cursor.classList.remove('blink');
-                MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility = false;
-            }, 3000); // Remove the blink effect
-
-            if(myHP == 0) {
-                currentScore[1] += 1;
-                scoreboard.textContent = currentScore[0] + " - " + currentScore[1];
-
-                if (currentScore[1] == 3){
-                    winlossscreen.style.display = 'flex';
-                    winLossMessage.textContent = "You lost!";
-                    cursor.style.display = 'none';
-                    nametag1.style.display = 'none';
-                    cursor2.style.display = 'none';
-                    nametag2.style.display = 'none';
-                    //Display some loss screen
-                    //Perhaps play a loss sound
-
-                    //say to the server that we lost
-                    fetch('/updateStats', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ outcome: false })
-                    });
-
-                    socket.emit("fightEnd", {fightCode: roomCode, isQuickplay: localStorage.getItem("isQuickplay") || "False"}); //Only need to send once
-
-                    //Disconnect from server
-                    socket.disconnect(); //Sends io client disconnect
-                }else{
-                    //reset health and hp variables
-                    myHP = 3;
-                    for (let i = 0; i < elementOrderEnemy.length; i++) {
-                        elementOrderEnemy[i].style.backgroundImage = "url('/static/assets/heart.png')";
-                    }
-                    for (let i = 0; i < elementOrder.length; i++) {
-                        elementOrder[i].style.backgroundImage = "url('/static/assets/heart.png')";
-                    }
-            }
-            }
-        }
-    }
-    else if(isPlayer1 == "False" && firstPlayer == "True") {
-        //If you are player 2 and player 1 sent the attack
-        if (isColliding(cursor, square) && !MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility) {
-            myHP--;
-            elementOrder[myHP].style.backgroundImage = "url('/static/assets/background.png')";
-            socket.emit("UpdatePlayerHealth", [roomCode, "1", myHP]);
-            MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility = true;
-            cursor.classList.add('blink');
-            setTimeout(() => {
-                cursor.classList.remove('blink');
-                MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility = false;
-            }, 3000); // Remove the blink effect after 1 second
-
-            if(myHP == 0) {
-                currentScore[1] += 1;
-                scoreboard.textContent = currentScore[0] + " - " + currentScore[1];
-                
-                if (currentScore[1] == 3){
-                    //Player 1 won (you, player 2, lost)
-                    winlossscreen.style.display = 'flex';
-                    winLossMessage.textContent = "You lost!";
-                    cursor.style.display = 'none';
-                    nametag1.style.display = 'none';
-                    cursor2.style.display = 'none';
-                    nametag2.style.display = 'none';
-                    //Display some loss screen
-                    //Perhaps play a loss sound
-
-                    fetch('/updateStats', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ outcome: false })
-                    });
-
-                    //Disconnect from server
-                    socket.disconnect();
-                }else{
-                //reset health and hp variables
-                myHP = 3;
-                for (let i = 0; i < elementOrderEnemy.length; i++) {
-                    elementOrderEnemy[i].style.backgroundImage = "url('/static/assets/heart.png')";
-                }
-                for (let i = 0; i < elementOrder.length; i++) {
-                    elementOrder[i].style.backgroundImage = "url('/static/assets/heart.png')";
-                }
-            }
-            }
-        }
-    }
-
 })
 
 socket.on("disconnect", async function(data) {
@@ -381,67 +221,49 @@ function sendSecondPos(pos) {
     socket.emit("updateSecondPosition", pos);
 }
 
-function sendAttack(attackPos) {
-    socket.emit("attackPlayer", { "fightCode": roomCode, "attackData": [attackPos[0], attackPos[1]], "isPlayer1": localStorage.getItem("player") });
+function sendAttack() {
+    console.log("isplayer1", localStorage.getItem("player"))
+    socket.emit("attackPlayer", [roomCode, localStorage.getItem("player")]);
 }
-
-function update_game_state(data) {
-    if (!canUpdate) return; //Prevent sending too many updates
-    canUpdate = false;
-    socket.emit("updateGameState", { "fightCode": roomCode, "username": username, "isPlayer1": localStorage.getItem("player"), "GameData": data });
-}
-
-pos = [100, 100, roomCode, [insideColor, outlineColor]];
-update_game_state(pos); //Send initial position
-
-setInterval(() => {
-    canUpdate = true;
-}, 2000);
 
 function handle_game_state(data) {
     const isPlayer1 = localStorage.getItem("player");
     if (isPlayer1 == "True") {//They are player 1 and testing if player 2 joined
         if (data.player2 != "None") {
-            console.log("Welcome:", data.player2.name);
             nametag2.textContent = data.player2.name;
             cursor2.style.display = 'block';
-            cursor2Target.x = data.player2.data[0];
-            cursor2Target.y = data.player2.data[1];
+            cursor2Target.x = data.player2.data["pos_x"];
+            cursor2Target.y = data.player2.data["pos_y"];
             if (cursor2Current.x === 0 && cursor2Current.y === 0) {
-                cursor2Current.x = data.player2.data[0];
-                cursor2Current.y = data.player2.data[1];
+                cursor2Target.x = data.player2.data["pos_x"];
+                cursor2Target.y = data.player2.data["pos_y"];
             }
-            updatePlayer2CursorColors(data.player2.data[3]);
+            updatePlayer2CursorColors(data.player1.data["cursor_data"]);
         }
     } else {
         if (data.player1 != "None") {
             cursor2.style.display = 'block';
             nametag2.textContent = data.player1.name;
-            cursor2Target.x = data.player1.data[0];
-            cursor2Target.y = data.player1.data[1];
+            cursor2Target.x = data.player1.data["pos_x"];
+            cursor2Target.y = data.player1.data["pos_y"];
             nametag2.style.display = 'block';
             if (cursor2Current.x === 0 && cursor2Current.y === 0) {
-                cursor2Current.x = data.player1.data[0];
-                cursor2Current.y = data.player1.data[1];
+                cursor2Current.x = data.player1.data["pos_x"];
+                cursor2Current.y = data.player1.data["pos_y"];
             }
-            updatePlayer2CursorColors(data.player1.data[3]);
+            updatePlayer2CursorColors(data.player1.data["cursor_data"]);
         }
     }
 }
 
 document.addEventListener('mousedown', (e) => {
-    if (e.button === 0 && canAttack && !MakeMeInvinciblePlsDontCheatThisLiterallyGivesYouInvincibility) { // LMB
+    if (e.button === 0 && canAttack) { // LMB
         //Perhaps show some attack animation?
         canAttack = false;
 
-        const squareSize = 80;
-        const x = e.clientX - squareSize / 2;
-        const y = e.clientY - squareSize / 2;
+        sendAttack();
 
-        pos = [x, y, squareSize];
-        sendAttack(pos);
-
-        setTimeout(() => {
+        setTimeout(() => { //This doesnt really matter because the server will handle the attack cooldown
             canAttack = true;
         }, 750);
     }
@@ -454,7 +276,6 @@ document.addEventListener('mousemove', (e) => {//Update current player cursor
     cursor.style.top = (e.clientY + 3 - cursor.height / 2) + 'px';
     positionNametag(nametag1, cursor);
     pos = [e.clientX + 3 - cursor.width / 2, e.clientY + 3 - cursor.height / 2, roomCode, [insideColor, outlineColor]];
-    update_game_state(pos);
     if (firstPlayer == "True") {
         sendFirstPos(pos);
     } else {
