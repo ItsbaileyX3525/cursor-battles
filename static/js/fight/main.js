@@ -28,6 +28,7 @@ let secondPosQueue = [];
 let canAttack = true;
 
 let canUpdate = true;
+const scale = window.innerWidth / 1920;
 
 let firstPlayer = localStorage.getItem("player") || "True"; //True if is player 1
 nametag1.textContent = localStorage.getItem("username") || "Guest";
@@ -73,12 +74,28 @@ function isColliding(el1, el2) {
     );
 }
 
+function toWorldCoords(x, y) {
+    return {
+        x: x / scale,
+        y: y / scale
+    };
+}
+
+function toScreenCoords(x, y) {
+    return {
+        x: x * scale,
+        y: y * scale
+    };
+}
+
 function processSocketUpdates() {
-    const data = firstPosQueue.shift();
     if (firstPlayer == "False") { // Receiving stuff from the host
         if (firstPosQueue.length > 0) {
             const data = firstPosQueue.shift();
             firstPos = data;
+            const screenCoords = toScreenCoords(firstPos[0], firstPos[1]);
+            firstPos[0] = screenCoords.x;
+            firstPos[1] = screenCoords.y;
             cursor2.style.display = 'block';
             cursor2Target.x = firstPos[0];
             cursor2Target.y = firstPos[1];
@@ -86,12 +103,15 @@ function processSocketUpdates() {
                 cursor2Current.x = firstPos[0];
                 cursor2Current.y = firstPos[1];
             }
-            updatePlayer2CursorColors(firstPos[3]);
         }
     } else { // Receiving stuff from the client
         if (secondPosQueue.length > 0) {
             const data = secondPosQueue.shift();
             secondPos = data;
+            console.log("new players cursor colours", secondPos[3])
+            const screenCoords = toScreenCoords(secondPos[0], secondPos[1]);
+            secondPos[0] = screenCoords.x;
+            secondPos[1] = screenCoords.y;
             cursor2.style.display = 'block';
             cursor2Target.x = secondPos[0];
             cursor2Target.y = secondPos[1];
@@ -99,7 +119,6 @@ function processSocketUpdates() {
                 cursor2Current.x = secondPos[0];
                 cursor2Current.y = secondPos[1];
             }
-            updatePlayer2CursorColors(secondPos[3]);
         }
     }
     requestAnimationFrame(processSocketUpdates); // Continue processing updates
@@ -135,7 +154,7 @@ socket.on("playerHit", function(data){
     const player_hit = data["hit"];
 
     if(player_hit == "player1" && firstPlayer == "True"){
-        cursor1.class.add("blink");
+        cursor1.classList.add("blink");
         setTimeout(() => {
             cursor1.classList.remove("blink");
         }, 3000);
@@ -168,31 +187,34 @@ socket.on("updateGameState", function(data){
 
     if(firstPlayer == "True") {
         scoreboard.textContent = `Score: ${player1_score} - ${player2_score}`;
+        myHeart1.style.display = player1_health >= 1 ? 'block' : 'none';
+        myHeart2.style.display = player1_health >= 2 ? 'block' : 'none';
+        myHeart3.style.display = player1_health >= 3 ? 'block' : 'none';
+        enemyHeart1.style.display = player2_health >= 1 ? 'block' : 'none';
+        enemyHeart2.style.display = player2_health >= 2 ? 'block' : 'none';
+        enemyHeart3.style.display = player2_health >= 3 ? 'block' : 'none';
     } else {
         scoreboard.textContent = `Score: ${player2_score} - ${player1_score}`;
-    }
+        myHeart1.style.display = player2_health >= 1 ? 'block' : 'none';
+        myHeart2.style.display = player2_health >= 2 ? 'block' : 'none';
+        myHeart3.style.display = player2_health >= 3 ? 'block' : 'none';
+        enemyHeart1.style.display = player1_health >= 1 ? 'block' : 'none';
+        enemyHeart2.style.display = player1_health >= 2 ? 'block' : 'none';
+        enemyHeart3.style.display = player1_health >= 3 ? 'block' : 'none';
     
-    myHeart1.style.display = player1_health >= 1 ? 'block' : 'none';
-    myHeart2.style.display = player1_health >= 2 ? 'block' : 'none';
-    myHeart3.style.display = player1_health >= 3 ? 'block' : 'none';
-    enemyHeart1.style.display = player2_health >= 1 ? 'block' : 'none';
-    enemyHeart2.style.display = player2_health >= 2 ? 'block' : 'none';
-    enemyHeart3.style.display = player2_health >= 3 ? 'block' : 'none';
-
-
+    }
 })
 
 socket.on("receiveAttack", function(data) {
     //Nah we will only send the event to the player who didnt call it 
-    const isPlayer1 = data[2];
     const attackPos = [data[0], data[1]];
 
     const body = document.querySelector('body');
     const square = document.createElement('div');
     square.classList.add("square");
 
-    square.style.left = attackPos[0] + 'px';
-    square.style.top = attackPos[1] + 'px';
+    square.style.left = attackPos[0] * scale + 'px';
+    square.style.top = attackPos[1] * scale + 'px';
 
     body.appendChild(square);
     setTimeout(() => {
@@ -214,10 +236,16 @@ socket.on("disconnect", async function(data) {
 });
 
 function sendFirstPos(pos) {
+    const realPos = toWorldCoords(pos[0], pos[1]);
+    pos[0] = realPos.x;
+    pos[1] = realPos.y;
     socket.emit("updateFirstPosition", pos);
 }
 
 function sendSecondPos(pos) {
+    const realPos = toWorldCoords(pos[0], pos[1]);
+    pos[0] = realPos.x;
+    pos[1] = realPos.y;
     socket.emit("updateSecondPosition", pos);
 }
 
@@ -238,7 +266,7 @@ function handle_game_state(data) {
                 cursor2Target.x = data.player2.data["pos_x"];
                 cursor2Target.y = data.player2.data["pos_y"];
             }
-            updatePlayer2CursorColors(data.player1.data["cursor_data"]);
+            updatePlayer2CursorColors(data.player2.data["cursor_data"]);
         }
     } else {
         if (data.player1 != "None") {
@@ -275,7 +303,7 @@ document.addEventListener('mousemove', (e) => {//Update current player cursor
     cursor.style.left = (e.clientX + 3 - cursor.width / 2) + 'px';
     cursor.style.top = (e.clientY + 3 - cursor.height / 2) + 'px';
     positionNametag(nametag1, cursor);
-    pos = [e.clientX + 3 - cursor.width / 2, e.clientY + 3 - cursor.height / 2, roomCode, [insideColor, outlineColor]];
+    pos = [e.clientX + 3 - cursor.width / 2, e.clientY + 3 - cursor.height / 2, roomCode];
     if (firstPlayer == "True") {
         sendFirstPos(pos);
     } else {

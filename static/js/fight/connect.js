@@ -1,5 +1,5 @@
 //Server stuff (on server)
-const socket = io.connect('http://' + window.location.hostname + ":80");
+const socket = io.connect(window.location.href)
 const username = localStorage.getItem("username") || "Guest";
 const roomCode = localStorage.getItem("fightCode"); //Fight room code
 

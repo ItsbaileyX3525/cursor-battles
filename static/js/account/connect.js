@@ -1,6 +1,5 @@
 //Server stuff (on server)
-const socket = io.connect('http://' + window.location.hostname + ":80");
-
+const socket = io.connect(window.location.href)
 socket.on("connect", () => {
     console.log("Connected to server.");
 });
