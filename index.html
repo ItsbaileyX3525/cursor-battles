@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lobby</title>
+  <link rel="stylesheet" href="public/css/styles.css">
+</head>
+<body>
+  <div id="notification"></div>
+  <div class="container">
+    <div class="customization-panel">
+      <div class="cursor-preview">
+        <img src="public/cursors/cursor.svg" alt="Cursor" id="cursorPreview" width="80" height="80">
+      </div>
+      
+      <div class="color-section">
+        <h3>Inside</h3>
+        <div class="color-sliders">
+          <div class="slider-group">
+            <label>Red</label>
+            <input type="range" min="0" max="255" value="64" class="slider inside-red">
+          </div>
+          <div class="slider-group">
+            <label>Green</label>
+            <input type="range" min="0" max="255" value="160" class="slider inside-green">
+          </div>
+          <div class="slider-group">
+            <label>Blue</label>
+            <input type="range" min="0" max="255" value="255" class="slider inside-blue">
+          </div>
+        </div>
+      </div>
+
+      <div class="color-section">
+        <h3>Outline</h3>
+        <div class="color-sliders">
+          <div class="slider-group">
+            <label>Red</label>
+            <input type="range" min="0" max="255" value="0" class="slider outline-red">
+          </div>
+          <div class="slider-group">
+            <label>Green</label>
+            <input type="range" min="0" max="255" value="0" class="slider outline-green">
+          </div>
+          <div class="slider-group">
+            <label>Blue</label>
+            <input type="range" min="0" max="255" value="0" class="slider outline-blue">
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="game-panel">
+      <div class="profile-card">
+        <div class="profile-header">
+          <data id="username" style="display: none;">Guest</data>
+          <div class="profile-name">Name: Guest</div>
+          <div class="profile-id">ID: 0</div>
+        </div>
+        <div class="profile-stats">
+          <div class="cursor-icon">
+            <img src="public/cursors/cursor.svg" alt="Cursor" width="40" height="40">
+          </div>
+          <div class="stats-info">
+            <div id="WinsInfo">Wins: 0</div>
+            <div id="LvlInfo">LVL: 1</div>
+            <div class="level-progress">
+              <div class="progress-fill" style="width: 50%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="coins-section">
+          <div id="CoinsInfo">Coins: 0</div>
+        </div>
+      </div>
+
+      <div class="game-actions">
+        <div class="play-button">
+          Quick Play
+        </div>
+      </div>
+
+      <div class="join-section">
+        <div class="join-label">Join:</div>
+        <input type="text" class="join-code" maxlength="5" placeholder="00000" pattern="[0-9]*">      
+      </div>
+      <div class="join-button">
+        Join Game
+      </div>
+      <div class="darkmode-button" onclick="localStorage.setItem('darkmode', 'true'); location.reload();">
+      <img style="max-width: 80px;max-height: 80px;" src="public/assets/lightmode.svg"></img>
+      </div>
+      <div class="logout-button" onclick="socket.send(encodeMessage('logout', null));">
+        Logout
+      </div>
+    </div>
+  </div>
+  <script>
+    const darkmodeButton = document.querySelector('.darkmode-button');
+    const darkmode = localStorage.getItem('darkmode');
+    if(darkmode === 'true') {
+      darkmodeButton.children[0].src = "public/assets/darkmode.svg";
+      darkmodeButton.onclick = function() {
+        localStorage.setItem('darkmode', 'false');
+        location.reload();
+      };
+    }
+  </script>
+  <script src="public/js/lobby/load.js"></script>
+  <script src="public/js/lobby/cursor.js"></script>
+  <script src="public/js/message.js"></script>
+  <script src="public/js/connect.js"></script>
+</body>
+</html>

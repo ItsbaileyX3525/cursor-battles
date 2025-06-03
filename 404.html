@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>404 - Page Not Found</title>
+	<style>
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			background-color: #121212;
+			color: #f0f0f0;
+			font-family: Arial, sans-serif;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			padding: 2rem;
+		}
+
+		.image-container {
+			width: 100%;
+			max-width: 800px;
+			aspect-ratio: 16 / 9;
+			background-color: #2a2a2a;
+			border: 2px solid #444;
+			border-radius: 12px;
+			margin-bottom: 2rem;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			overflow: hidden;
+		}
+
+		.image-container img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+		h1 {
+			font-size: 4rem;
+			margin-bottom: 1rem;
+		}
+
+		p {
+			font-size: 1.2rem;
+			margin-bottom: 2rem;
+			text-align: center;
+			max-width: 600px;
+		}
+
+		a.button {
+			background-color: #1e88e5;
+			color: white;
+			padding: 0.75rem 1.5rem;
+			border-radius: 8px;
+			text-decoration: none;
+			font-weight: bold;
+			transition: background-color 0.2s ease-in-out;
+		}
+
+		a.button:hover {
+			background-color: #1565c0;
+		}
+	</style>
+</head>
+<body>
+	<div class="image-container">
+		<img src="public/assets/blil.jpg" alt="404 Image">
+	</div>
+
+	<h1>404</h1>
+	<p>The page you're looking for doesn't exist or has been moved. Try checking the URL or return to the homepage.</p>
+	<a href="/" class="button">Go Home</a>
+</body>
+</html>
